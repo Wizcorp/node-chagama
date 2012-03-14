@@ -1,0 +1,138 @@
+#!/usr/bin/env node
+var inireader   = require("inireader"),
+    prompt      = require("prompt"),
+    colors       = require("colors"),
+    fs          = require("fs"),
+    cp          = require("child_process"),
+    pivotal     = require("pivotal"),
+    chagama     = require("../lib/chagama"),
+    ini         = loadGitConfig();
+
+
+
+// Command definition
+function loadGitConfig(ini){
+
+    var path = process.env.HOME + "/.gitconfig";
+
+    try{
+        try{
+            fs.statSync(path)
+        }
+        catch(e){
+            fs.writeFileSync(path, "");
+        }
+
+        var ini = new inireader.IniReader();
+        ini.load(path)
+        return ini;
+    }
+    catch(e) {
+        console.log(e.message);
+        console.log("");
+        console.error("  !!! You do not seem to have a git config, or it is not readable. Please make sure it is present in your home directory".red);
+        console.log("");
+        process.exit();
+    }
+}
+
+function setCredentials(cb){
+
+    var callAgain = arguments.callee;
+
+    console.log("  Please enter your PivotalTracker User name and password to generate you PT API token.".green);
+    console.log("");
+
+    prompt.message = "  PivotalTracker".green;
+    prompt.delimiter =   " //" . blue.bold;
+    prompt.start();
+
+    prompt.get([
+      {
+        name        : 'name',
+        validator   : /^[a-zA-Z\@\._\-]+$/,
+        warning     : 'username',
+        message     : 'User name',
+        empty       : false
+      },
+      {
+        name        : 'pass',
+        hidden      : true,
+        message     : 'Password',
+        empty       : false
+      }
+   ], function(err, user){
+
+        prompt.pause();
+
+        pivotal.getToken(user.name, user.pass, function(token){
+            if(token){
+                console.log("");
+                console.log("  ✔ Your user token was retrieved successfully. Writing it in you .gitconfig for later uses...".green);
+                ini.param("pivotal.token", token);
+                ini.write();
+                cb();
+            }
+            else{
+                console.log();
+                console.log("  ✖ Oops! Wrong username and/or password it would seem. Mind to try again?".red);
+                callAgain(cb);
+            }
+        });
+    });
+}
+
+function init(){
+
+    var cmd  = process.argv[2];
+    var args = process.argv.slice(3);
+    var argsPosItr = 0;
+
+    runCommand = function(){
+
+        pivotal.useToken(ini.param("pivotal.token"));
+
+        chagama.pivotal = pivotal;
+
+        // Make sure the command is defined
+        if(!chagama.commands[cmd]){
+            console.error(("  ✖ Command not found: " + cmd).red);
+            chagama.showHelp();
+            process.exit(1);
+        }
+
+
+        /// Make sure the argCount is correct
+        for(var a in chagama.commands[cmd].args){
+
+            if(!chagama.commands[cmd].args[a].optional && !args[argsPosItr])
+            {
+                console.log("");
+                console.error(("  ✖ Missing argument: " + a).red);
+                chagama.showHelp(cmd);
+                process.exit(1);
+            }
+
+            argsPosItr++;
+        }
+
+        chagama.commands[cmd].func.apply(null, args);
+    }
+
+    if(!cmd){
+        chagama.showSign();
+        chagama.showHelp();
+        process.exit(1);
+    }
+    if(!ini.param("pivotal")){
+        chagama.showSign();
+        console.log(" ");
+        console.log(" ", "☺".green, "Oh, here you are! You seem to be new around here, why don't you let me help you to set up chagama?".magenta)
+        console.log(" ");
+        setCredentials(runCommand);
+    }
+    else
+        runCommand();
+}
+
+init(process.argv);

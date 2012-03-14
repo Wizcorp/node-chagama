@@ -1,0 +1,36 @@
+{
+    "name" : "chagama",
+    "description" : "A CLI application bridging PivotalTracker and Gitflow",
+    "keywords" : [ "git,", "gitflow", "github", "pivotal", "tracker", "pivotaltracker" ],
+    "homepage" : "https://github.com/Wizcorp/chagama",
+    "version" : "0.1.1",
+    "author" : "Marc Trudel <mtrudel@wizcorp.jp>",
+    "contributors" : [],
+    "bin" : {
+        "chagama" : "./bin/chagama"
+    },
+    "engines" : {
+        "node": ">=0.4.12"
+    },
+    "main" : "index.js",
+    "directories" : {
+        "examples": "./examples",
+        "unittests": "./tests"
+    },
+    "repository" : {
+        "type" : "git",
+        "url" : "https://github.com/Wizcorp/chagama.git"
+    },
+    "dependencies" : {
+        "async" : ">=0.1.15",
+        "colors" : ">=0.6.0-1",
+        "inireader" : ">=0.2.2",
+        "pivotal" : ">=0.1.1",
+        "github" : ">=0.0.7",
+        "prompt" : ">=0.1.12"
+    },
+    "devDependencies" : {
+        "vows" : ">=0.6.1",
+        "jslint" : ">=0.1.4"
+    }
+}
